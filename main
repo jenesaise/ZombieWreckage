@@ -1,0 +1,95 @@
+import pygame, random, sys
+
+pygame.init()
+
+bullet_sound = pygame.mixer.Sound("assets/Grenade+1.mp3")
+
+WIDTH, HEIGHT = 600, 400
+WIN = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Zombie Dodger")
+
+background_img = pygame.image.load("assets/image.jpg")
+background_img = pygame.transform.scale(background_img, (WIDTH, HEIGHT))
+
+player_img = pygame.image.load("assets/player.png")
+player_img = pygame.transform.scale(player_img, (70, 70))
+
+zombie_img = pygame.image.load("assets/zombie.png")
+zombie_img = pygame.transform.scale(zombie_img, (70, 70))
+
+bullet_img = pygame.Surface((5, 10))
+bullet_img.fill((255, 0, 0))
+
+player = pygame.Rect(WIDTH // 2, HEIGHT - 60, 50, 50)
+player_speed = 5
+
+zombies = []
+zombie_speed = 3
+spawn_delay = 30
+frame_count = 0
+
+bullets = []
+bullet_speed = 7
+
+score = 0
+font = pygame.font.SysFont(None, 36)
+
+clock = pygame.time.Clock()
+running = True
+
+while running:
+    clock.tick(30)
+    WIN.blit(background_img, (0, 0))
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT] and player.left > 0:
+        player.x -= player_speed
+    if keys[pygame.K_RIGHT] and player.right < WIDTH:
+        player.x += player_speed
+    if keys[pygame.K_SPACE]:
+        if len(bullets) < 5:
+            bullet = pygame.Rect(player.x + player.width // 2 - 2, player.y, 5, 10)
+            bullets.append(bullet)
+            bullet_sound.play()
+
+
+    frame_count += 1
+    if frame_count % spawn_delay == 0:
+        zombie = pygame.Rect(random.randint(0, WIDTH - 50), 0, 50, 50)
+        zombies.append(zombie)
+
+    for zombie in zombies[:]:
+        zombie.y += zombie_speed
+        if zombie.y > HEIGHT:
+            zombies.remove(zombie)
+        if player.colliderect(zombie):
+            print(f"Game Over! Final Score: {score}")
+            pygame.quit()
+            sys.exit()
+
+    for bullet in bullets[:]:
+        bullet.y -= bullet_speed
+        if bullet.y < 0:
+            bullets.remove(bullet)
+        else:
+            for zombie in zombies[:]:
+                if bullet.colliderect(zombie):
+                    bullets.remove(bullet)
+                    zombies.remove(zombie)
+                    score += 1
+                    break
+
+    WIN.blit(player_img, (player.x, player.y))
+    for zombie in zombies:
+        WIN.blit(zombie_img, (zombie.x, zombie.y))
+    for bullet in bullets:
+        WIN.blit(bullet_img, (bullet.x, bullet.y))
+
+    score_text = font.render(f"Score: {score}", True, (0, 0, 0))
+    WIN.blit(score_text, (10, 10))
+
+    pygame.display.update()
